@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Caption Generator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .container {
+            background: white;
+            border-radius: 24px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 750px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header .icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: #1a1a2e;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #666;
+            margin-top: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #f0f4ff;
+            color: #667eea;
+            padding: 4px 12px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+            letter-spacing: 0.5px;
+        }
+
+        .upload-zone {
+            border: 2.5px dashed #c7d2fe;
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafbff;
+            position: relative;
+        }
+
+        .upload-zone:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-zone .upload-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-zone h3 {
+            color: #1a1a2e;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-zone p {
+            color: #888;
+            font-size: 0.875rem;
+        }
+
+        .upload-zone .formats {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 1rem;
+        }
+
+        .format-tag {
+            background: #e8ecff;
+            color: #667eea;
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        #fileInput { display: none; }
+
+        .btn-generate {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+            transition: all 0.3s;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102,126,234,0.4);
+        }
+
+        .btn-generate:disabled {
+            background: #c7d2fe;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f0f4ff;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .loading .dots::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .result {
+            display: none;
+            margin-top: 1.5rem;
+        }
+
+        .result-image {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .result-image img {
+            width: 100%;
+            max-height: 420px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .image-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.5));
+            padding: 2rem 1rem 1rem;
+        }
+
+        .image-overlay span {
+            color: white;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .caption-card {
+            background: #fafbff;
+            border: 1.5px solid #e8ecff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .caption-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .caption-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .caption-label .dot {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+        }
+
+        .btn-copy {
+            background: #f0f4ff;
+            color: #667eea;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-copy:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .caption-text {
+            font-size: 1.2rem;
+            color: #1a1a2e;
+            font-style: italic;
+            line-height: 1.7;
+            font-weight: 400;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 1rem;
+        }
+
+        .stat-chip {
+            background: #f0f4ff;
+            color: #667eea;
+            padding: 5px 14px;
+            border-radius: 99px;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #888;
+            border: 1.5px solid #e0e0e0;
+            padding: 0.7rem 2rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+            transition: all 0.2s;
+        }
+
+        .btn-reset:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #aaa;
+            font-size: 0.8rem;
+        }
+
+        .footer span {
+            color: #667eea;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">🤖</div>
+            <h1>Image Caption Generator</h1>
+            <p>Powered by CNN + RNN Deep Learning</p>
+            <span class="badge">InceptionV3 + LSTM Model</span>
+        </div>
+
+        <div class="upload-zone" id="uploadZone" 
+             onclick="document.getElementById('fileInput').click()"
+             ondragover="handleDragOver(event)"
+             ondrop="handleDrop(event)">
+            <div class="upload-icon">🖼️</div>
+            <h3>Drop your image here</h3>
+            <p>or click to browse from your computer</p>
+            <div class="formats">
+                <span class="format-tag">JPG</span>
+                <span class="format-tag">PNG</span>
+                <span class="format-tag">WEBP</span>
+                <span class="format-tag">GIF</span>
+            </div>
+        </div>
+
+        <input type="file" id="fileInput" 
+               accept="image/*" 
+               onchange="handleFile(event)">
+
+        <button class="btn-generate" id="generateBtn" 
+                onclick="generateCaption()" disabled>
+            ✨ Generate Caption
+        </button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing image<span class="dots"></span></p>
+        </div>
+
+        <div class="result" id="result">
+            <div class="result-image">
+                <img id="previewImg" src="" alt="Uploaded image">
+                <div class="image-overlay">
+                    <span id="fileName"></span>
+                </div>
+            </div>
+
+            <div class="caption-card">
+                <div class="caption-header">
+                    <div class="caption-label">
+                        <div class="dot"></div>
+                        AI Generated Caption
+                    </div>
+                    <button class="btn-copy" onclick="copyCaption()">
+                        📋 Copy
+                    </button>
+                </div>
+                <div class="caption-text" id="captionText"></div>
+                <div class="stats-row">
+                    <span class="stat-chip">🧠 CNN + LSTM</span>
+                    <span class="stat-chip">📊 Flickr8k Dataset</span>
+                    <span class="stat-chip" id="wordCount"></span>
+                </div>
+            </div>
+
+            <button class="btn-reset" onclick="resetApp()">
+                🔄 Try Another Image
+            </button>
+        </div>
+
+        <div class="footer">
+            Built with <span>TensorFlow</span> · 
+            InceptionV3 + LSTM · 
+            <span>Flickr8k</span> Dataset
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            document.getElementById('uploadZone').style.borderColor = '#667eea';
+            document.getElementById('uploadZone').style.background = '#f0f4ff';
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                processFile(file);
+            }
+        }
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (file) processFile(file);
+        }
+
+        function processFile(file) {
+            selectedFile = file;
+            document.getElementById('generateBtn').disabled = false;
+            document.getElementById('fileName').textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('captionText').textContent = '';
+                document.getElementById('wordCount').textContent = '';
+                document.getElementById('uploadZone').style.display = 'none';
+            }
+            reader.readAsDataURL(file);
+        }
+
+        async function generateCaption() {
+            if (!selectedFile) return;
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('generateBtn').disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                const caption = data.caption;
+
+                document.getElementById('captionText').textContent = '"' + caption + '"';
+                
+                const words = caption.split(' ').length;
+                document.getElementById('wordCount').textContent = `📝 ${words} words`;
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+
+            } catch (error) {
+                document.getElementById('captionText').textContent = 'Error generating caption. Please try again.';
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+            }
+        }
+
+        function copyCaption() {
+            const caption = document.getElementById('captionText').textContent;
+            navigator.clipboard.writeText(caption).then(() => {
+                const btn = document.querySelector('.btn-copy');
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => btn.textContent = '📋 Copy', 2000);
+            });
+        }
+
+        function resetApp() {
+            selectedFile = null;
+            document.getElementById('uploadZone').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('fileInput').value = '';
+        }
+    </script>
+</body>
+</html>
